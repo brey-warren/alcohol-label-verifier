@@ -98,15 +98,19 @@ src/
   styles.css           responsive interface
 public/
   sample-label.png     synthetic test label used by the demo
+  test-labels/         additional synthetic batch-test artwork
   tessdata/            bundled English OCR model
   tesseract*/          bundled OCR worker/runtime
 docs/
   DECISIONS.md         architecture and trade-offs
+  FINAL_CHECKLIST.md   requirements coverage and release checklist
 ```
 
 ## Testing
 
-Unit tests cover tolerant brand matching, ABV mismatch, proof consistency, equivalent metric volumes, missing warning text, and import-country checks. The GitHub Actions workflow runs tests, linting, and a production build for every push and pull request.
+Unit tests cover tolerant brand matching, ABV mismatch, proof consistency, equivalent metric volumes, missing warning text, and import-country checks. Manual browser verification covers local OCR, intentional mismatches, and a two-file batch selected through the real file picker. The GitHub Actions workflow runs tests, linting, and a production build for every push and pull request.
+
+See [`docs/FINAL_CHECKLIST.md`](docs/FINAL_CHECKLIST.md) for the verified scenarios and remaining release steps.
 
 ## Accessibility and privacy
 

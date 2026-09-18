@@ -83,6 +83,7 @@ function App() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const selected = files.find((item) => item.id === selectedId) ?? files[0];
+  const selectedPosition = selected ? files.findIndex((item) => item.id === selected.id) + 1 : 0;
   const completedReports = files.filter((item) => item.report).length;
 
   const requiredComplete = useMemo(
@@ -293,7 +294,15 @@ function App() {
 
         {selected?.error && <section className="error-panel" role="alert"><AlertCircle /><div><h2>We couldn’t analyze this image</h2><p>{selected.error}</p><p>Try a sharper, evenly lit image with the label filling the frame.</p></div></section>}
 
-        {selected?.report && <Results report={selected.report} previewUrl={selected.previewUrl} filename={selected.file.name} />}
+        {selected?.report && (
+          <Results
+            report={selected.report}
+            previewUrl={selected.previewUrl}
+            filename={selected.file.name}
+            position={selectedPosition}
+            total={files.length}
+          />
+        )}
 
         {(files.length > 0 || selected?.report) && (
           <div className="reset-row"><button type="button" onClick={reset}><RotateCcw aria-hidden="true" /> Start a new review</button></div>
@@ -314,7 +323,19 @@ function App() {
   );
 }
 
-function Results({ report, previewUrl, filename }: { report: VerificationReport; previewUrl: string; filename: string }) {
+function Results({
+  report,
+  previewUrl,
+  filename,
+  position,
+  total,
+}: {
+  report: VerificationReport;
+  previewUrl: string;
+  filename: string;
+  position: number;
+  total: number;
+}) {
   const counts = report.checks.reduce(
     (total, check) => ({ ...total, [check.status]: total[check.status] + 1 }),
     { pass: 0, fail: 0, review: 0 },
@@ -329,7 +350,13 @@ function Results({ report, previewUrl, filename }: { report: VerificationReport;
       </div>
 
       <div className="results-layout">
-        <div className="image-panel"><div className="panel-title"><span>Source image</span><small>Processed locally</small></div><img src={previewUrl} alt={`Uploaded alcohol label: ${filename}`} /></div>
+        <div className="image-panel">
+          <div className="panel-title">
+            <span>Selected label image</span>
+            <small>Label {position} of {total} · {filename}</small>
+          </div>
+          <img src={previewUrl} alt={`Selected alcohol label: ${filename}`} />
+        </div>
         <div className="checks-panel">
           <div className="panel-title"><span>Field checks</span><small>{report.checks.length} requirements reviewed</small></div>
           <div className="check-list">
