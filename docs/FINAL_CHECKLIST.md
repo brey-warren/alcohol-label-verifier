@@ -1,6 +1,6 @@
 # Final submission checklist
 
-This checklist tracks the take-home requirements and the remaining release work. Keep the pull request open until every release item is complete.
+This checklist records take-home requirements, verified release behavior, and any remaining manual checks.
 
 ## Requirements coverage
 
@@ -17,9 +17,10 @@ This checklist tracks the take-home requirements and the remaining release work.
 - [x] Each result includes a per-label warning-format checklist for human confirmation.
 - [x] A built-in sample label and a second synthetic batch-test label are included.
 - [x] Unit tests, linting, and the production build pass locally and in GitHub Actions.
-- [ ] A permanent deployed application URL is available.
-- [ ] The deployed application has passed final desktop and mobile verification.
-- [ ] The production URL is recorded in the README.
+- [x] A permanent deployed application URL is available.
+- [x] The deployed application has passed final desktop verification.
+- [ ] The deployed application has passed final mobile verification on a physical device.
+- [x] The production URL is recorded in the README.
 
 ## Verified scenarios
 
@@ -33,17 +34,19 @@ This checklist tracks the take-home requirements and the remaining release work.
 | Independent batch records | Editing one label’s expected values does not change another label’s record |
 | Warning visual review | Each label retains its own five-item manual checklist in browser memory |
 | Automated verification | Ten unit tests, ESLint, TypeScript, and Vite production build pass |
+| Production deployment | Public Vercel URL loaded without authentication; bundled OCR completed at 95% confidence in about three seconds |
+| Hosted batch state | Separate expected values and warning-review selections persisted per label; reset restored defaults and cleared the batch |
 
-## Release sequence
+## Release record
 
-1. Deploy the open pull-request branch.
-2. Test the hosted app on desktop and mobile.
-3. Repeat a two-file upload on the hosted app and verify result switching.
-4. Test invalid type, oversized file, unreadable image, and reset behavior.
-5. Record the permanent production URL in the README and pull-request description.
-6. Confirm GitHub Actions passes after the documentation update.
-7. Merge the pull request into `main`.
-8. Confirm the production deployment from `main` and submit both URLs.
+- [x] Deploy the merged application from `main`.
+- [x] Verify public access and the hosted app on desktop.
+- [x] Verify hosted batch record isolation, result switching, warning-review isolation, and reset behavior.
+- [x] Record the permanent production URL in the README.
+- [x] Confirm GitHub Actions and Vercel deployment checks pass after documentation updates.
+- [x] Merge the implementation and live-link pull requests into `main`.
+- [ ] Run a final smoke test on a physical mobile device.
+- [ ] Manually verify hosted invalid-type, oversized-file, and unreadable-image error states.
 
 ## Declared limitations
 
