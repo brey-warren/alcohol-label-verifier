@@ -12,8 +12,9 @@ This checklist tracks the take-home requirements and the remaining release work.
 - [x] Brand matching tolerates harmless capitalization, punctuation, and spacing differences.
 - [x] Government warning wording is checked separately from visual formatting.
 - [x] Uncertain findings are routed to human review.
-- [x] Multiple images can be selected together and processed sequentially.
+- [x] Multiple images can be selected together, assigned independent application records, and processed sequentially.
 - [x] The interface provides progress, individual file status, error recovery, and separate batch results.
+- [x] Each result includes a per-label warning-format checklist for human confirmation.
 - [x] A built-in sample label and a second synthetic batch-test label are included.
 - [x] Unit tests, linting, and the production build pass locally and in GitHub Actions.
 - [ ] A permanent deployed application URL is available.
@@ -29,7 +30,9 @@ This checklist tracks the take-home requirements and the remaining release work.
 | Two-file Choose files upload | Two distinct PNG files queued and processed independently |
 | Batch result navigation | Selecting either filename switches the image and corresponding field report |
 | River Glen synthetic label | Detected 40% ABV, 80 proof, 750 mL, and warning text; reported application mismatches |
-| Automated verification | Seven unit tests, ESLint, TypeScript, and Vite production build pass |
+| Independent batch records | Editing one label’s expected values does not change another label’s record |
+| Warning visual review | Each label retains its own five-item manual checklist in browser memory |
+| Automated verification | Ten unit tests, ESLint, TypeScript, and Vite production build pass |
 
 ## Release sequence
 
@@ -46,5 +49,5 @@ This checklist tracks the take-home requirements and the remaining release work.
 
 - The completed rule set targets distilled spirits. Wine and malt beverages require separate strategies.
 - A photograph cannot reliably prove physical type size, bold weight, contrast, or field-of-vision placement; those remain human-review items.
-- Batch images currently share one application record. A production workflow should pair structured application records with individual artwork.
+- Batch records are entered manually in the prototype. A production workflow should import and pair structured application records with artwork.
 - OCR accuracy varies with focus, glare, perspective, resolution, and typography.

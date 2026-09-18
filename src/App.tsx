@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -16,12 +16,19 @@ import {
   X,
 } from "lucide-react";
 import { recognizeLabel } from "./lib/ocr";
+import {
+  cloneApplication,
+  countConfirmedReviewItems,
+  createWarningReview,
+  isApplicationComplete,
+} from "./lib/review";
 import { verifyLabel } from "./lib/verification";
 import type {
   ApplicationData,
   CheckResult,
   OcrProgress,
   VerificationReport,
+  WarningVisualReview,
 } from "./types";
 
 const DEFAULT_APPLICATION: ApplicationData = {
@@ -38,12 +45,47 @@ type FileResult = {
   id: string;
   file: File;
   previewUrl: string;
+  application: ApplicationData;
+  warningReview: WarningVisualReview;
   report?: VerificationReport;
   error?: string;
 };
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 12 * 1024 * 1024;
+const MAX_BATCH_SIZE = 20;
+
+const WARNING_REVIEW_ITEMS: Array<{
+  key: keyof WarningVisualReview;
+  label: string;
+  help: string;
+}> = [
+  {
+    key: "uppercaseHeading",
+    label: "Heading is uppercase",
+    help: 'Confirm the heading reads “GOVERNMENT WARNING:” in all capital letters.',
+  },
+  {
+    key: "boldHeading",
+    label: "Heading appears bold",
+    help: "Confirm the heading is visually heavier than the warning body text.",
+  },
+  {
+    key: "legibleText",
+    label: "Warning is legible",
+    help: "Confirm the type is readable in the submitted artwork without magnification artifacts.",
+  },
+  {
+    key: "sufficientContrast",
+    label: "Contrast is adequate",
+    help: "Confirm the warning is clearly distinguishable from its background.",
+  },
+  {
+    key: "groupedAndUnobscured",
+    label: "Statement is together and unobscured",
+    help: "Confirm the heading and both paragraphs are presented together and not hidden by other elements.",
+  },
+];
 
 function StatusIcon({ status }: { status: CheckResult["status"] }) {
   if (status === "pass") return <CheckCircle2 aria-hidden="true" />;
@@ -74,7 +116,7 @@ function Field({
 }
 
 function App() {
-  const [application, setApplication] = useState(DEFAULT_APPLICATION);
+  const [applicationTemplate, setApplicationTemplate] = useState(DEFAULT_APPLICATION);
   const [files, setFiles] = useState<FileResult[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -85,29 +127,43 @@ function App() {
   const selected = files.find((item) => item.id === selectedId) ?? files[0];
   const selectedPosition = selected ? files.findIndex((item) => item.id === selected.id) + 1 : 0;
   const completedReports = files.filter((item) => item.report).length;
-
-  const requiredComplete = useMemo(
-    () =>
-      Boolean(
-        application.brandName.trim() &&
-          application.classType.trim() &&
-          application.abv.trim() &&
-          application.netContents.trim() &&
-          application.producer.trim() &&
-          (!application.imported || application.countryOfOrigin.trim()),
-      ),
-    [application],
-  );
+  const activeApplication = selected?.application ?? applicationTemplate;
 
   function updateApplication<K extends keyof ApplicationData>(key: K, value: ApplicationData[K]) {
-    setApplication((current) => ({ ...current, [key]: value }));
+    if (selected) {
+      setFiles((current) =>
+        current.map((item) =>
+          item.id === selected.id
+            ? {
+                ...item,
+                application: { ...item.application, [key]: value },
+                report: undefined,
+                error: undefined,
+              }
+            : item,
+        ),
+      );
+    } else {
+      setApplicationTemplate((current) => ({ ...current, [key]: value }));
+    }
     setFormError("");
+  }
+
+  function updateWarningReview(key: keyof WarningVisualReview, value: boolean) {
+    if (!selected) return;
+    setFiles((current) =>
+      current.map((item) =>
+        item.id === selected.id
+          ? { ...item, warningReview: { ...item.warningReview, [key]: value } }
+          : item,
+      ),
+    );
   }
 
   function addFiles(incoming: File[]) {
     const errors: string[] = [];
     const valid = incoming.filter((file) => {
-      if (!ACCEPTED_TYPES.includes(file.type) && !file.name.toLowerCase().endsWith(".svg")) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
         errors.push(`${file.name}: use JPG, PNG, or WebP.`);
         return false;
       }
@@ -118,11 +174,18 @@ function App() {
       return true;
     });
 
-    const additions = valid.slice(0, Math.max(0, 20 - files.length)).map((file) => ({
+    const capacity = Math.max(0, MAX_BATCH_SIZE - files.length);
+    const defaults = selected?.application ?? applicationTemplate;
+    const additions = valid.slice(0, capacity).map((file) => ({
       id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
       file,
       previewUrl: URL.createObjectURL(file),
+      application: cloneApplication(defaults),
+      warningReview: createWarningReview(),
     }));
+    if (valid.length > capacity) {
+      errors.push(`A review batch can contain up to ${MAX_BATCH_SIZE} labels.`);
+    }
     setFiles((current) => [...current, ...additions]);
     if (!selectedId && additions[0]) setSelectedId(additions[0].id);
     setFormError(errors.join(" "));
@@ -149,12 +212,14 @@ function App() {
   }
 
   async function analyze() {
-    if (!requiredComplete) {
-      setFormError("Complete all required application fields before analyzing the label.");
-      return;
-    }
     if (!files.length) {
       setFormError("Upload at least one label image.");
+      return;
+    }
+    const incomplete = files.find((item) => !isApplicationComplete(item.application));
+    if (incomplete) {
+      setSelectedId(incomplete.id);
+      setFormError(`Complete all required application fields for ${incomplete.file.name}.`);
       return;
     }
 
@@ -166,7 +231,7 @@ function App() {
       setSelectedId(item.id);
       try {
         const ocr = await recognizeLabel(item.file, setProgress);
-        const report = verifyLabel(application, ocr.text, ocr.confidence, ocr.durationMs);
+        const report = verifyLabel(item.application, ocr.text, ocr.confidence, ocr.durationMs);
         setFiles((current) =>
           current.map((candidate) => (candidate.id === item.id ? { ...candidate, report } : candidate)),
         );
@@ -188,8 +253,10 @@ function App() {
     files.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     setFiles([]);
     setSelectedId(undefined);
+    setApplicationTemplate({ ...DEFAULT_APPLICATION });
     setProgress({ status: "ready", progress: 0 });
     setFormError("");
+    if (fileInput.current) fileInput.current.value = "";
   }
 
   return (
@@ -221,29 +288,36 @@ function App() {
         <section className="workflow" aria-label="Label verification workflow">
           <div className="step-card">
             <div className="step-heading"><span>1</span><div><h2>Application details</h2><p>Enter the values the label should contain.</p></div></div>
+            <div className="record-context" role="status">
+              {selected ? (
+                <><strong>Editing label {selectedPosition} of {files.length}</strong><span>{selected.file.name} · Changes apply only to this label.</span></>
+              ) : (
+                <><strong>Application defaults</strong><span>These values will be copied into each label you add.</span></>
+              )}
+            </div>
             <div className="form-grid">
               <Field label="Brand name">
-                <input value={application.brandName} onChange={(event) => updateApplication("brandName", event.target.value)} required />
+                <input value={activeApplication.brandName} onChange={(event) => updateApplication("brandName", event.target.value)} required disabled={isProcessing} />
               </Field>
               <Field label="Class / type">
-                <input value={application.classType} onChange={(event) => updateApplication("classType", event.target.value)} required />
+                <input value={activeApplication.classType} onChange={(event) => updateApplication("classType", event.target.value)} required disabled={isProcessing} />
               </Field>
               <Field label="Alcohol by volume" hint="Enter the number only">
-                <div className="input-suffix"><input inputMode="decimal" value={application.abv} onChange={(event) => updateApplication("abv", event.target.value)} required /><span>%</span></div>
+                <div className="input-suffix"><input inputMode="decimal" value={activeApplication.abv} onChange={(event) => updateApplication("abv", event.target.value)} required disabled={isProcessing} /><span>%</span></div>
               </Field>
               <Field label="Net contents">
-                <input value={application.netContents} onChange={(event) => updateApplication("netContents", event.target.value)} required />
+                <input value={activeApplication.netContents} onChange={(event) => updateApplication("netContents", event.target.value)} required disabled={isProcessing} />
               </Field>
               <Field label="Producer / bottler" hint="Name and address as submitted">
-                <input value={application.producer} onChange={(event) => updateApplication("producer", event.target.value)} required />
+                <input value={activeApplication.producer} onChange={(event) => updateApplication("producer", event.target.value)} required disabled={isProcessing} />
               </Field>
               <label className="checkbox-field">
-                <input type="checkbox" checked={application.imported} onChange={(event) => updateApplication("imported", event.target.checked)} />
+                <input type="checkbox" checked={activeApplication.imported} onChange={(event) => updateApplication("imported", event.target.checked)} disabled={isProcessing} />
                 <span><strong>Imported product</strong><small>Require a country-of-origin statement</small></span>
               </label>
-              {application.imported && (
+              {activeApplication.imported && (
                 <Field label="Country of origin">
-                  <input value={application.countryOfOrigin} onChange={(event) => updateApplication("countryOfOrigin", event.target.value)} required />
+                  <input value={activeApplication.countryOfOrigin} onChange={(event) => updateApplication("countryOfOrigin", event.target.value)} required disabled={isProcessing} />
                 </Field>
               )}
             </div>
@@ -254,6 +328,7 @@ function App() {
             <button
               className="dropzone"
               type="button"
+              disabled={isProcessing}
               onClick={() => fileInput.current?.click()}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => { event.preventDefault(); addFiles(Array.from(event.dataTransfer.files)); }}
@@ -263,17 +338,31 @@ function App() {
               <span>or choose files · JPG, PNG, WebP · up to 12 MB each</span>
               <em>Choose files</em>
             </button>
-            <input ref={fileInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => addFiles(Array.from(event.target.files ?? []))} />
-            <div className="sample-row"><span>No label handy?</span><button type="button" onClick={loadSample}>Use the sample label</button></div>
+            <input
+              ref={fileInput}
+              className="sr-only"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              disabled={isProcessing}
+              onChange={(event) => {
+                addFiles(Array.from(event.target.files ?? []));
+                event.currentTarget.value = "";
+              }}
+            />
+            <div className="sample-row"><span>No label handy?</span><button type="button" onClick={loadSample} disabled={isProcessing}>Use the sample label</button></div>
 
             {files.length > 0 && (
               <div className="file-list" aria-label="Selected label images">
-                {files.map((item) => (
-                  <button className={`file-chip ${selected?.id === item.id ? "active" : ""}`} type="button" key={item.id} onClick={() => setSelectedId(item.id)}>
-                    <FileImage aria-hidden="true" /><span>{item.file.name}<small>{(item.file.size / 1024 / 1024).toFixed(1)} MB</small></span>
-                    <span className={`file-state ${item.report?.overallStatus ?? ""}`}>{item.report ? formatStatus(item.report.overallStatus) : item.error ? "Error" : "Ready"}</span>
-                    <span role="button" tabIndex={0} className="remove-file" aria-label={`Remove ${item.file.name}`} onClick={(event) => { event.stopPropagation(); removeFile(item.id); }} onKeyDown={(event) => { if (event.key === "Enter") removeFile(item.id); }}><X aria-hidden="true" /></span>
-                  </button>
+                {files.map((item, index) => (
+                  <div className={`file-chip ${selected?.id === item.id ? "active" : ""}`} key={item.id}>
+                    <button className="file-select" type="button" onClick={() => setSelectedId(item.id)} aria-pressed={selected?.id === item.id}>
+                      <FileImage aria-hidden="true" />
+                      <span>{item.file.name}<small>Label {index + 1} · {item.application.brandName || "Application incomplete"}</small></span>
+                      <span className={`file-state ${item.report?.overallStatus ?? ""}`}>{item.report ? formatStatus(item.report.overallStatus) : item.error ? "Error" : "Ready"}</span>
+                    </button>
+                    <button type="button" className="remove-file" aria-label={`Remove ${item.file.name}`} onClick={() => removeFile(item.id)} disabled={isProcessing}><X aria-hidden="true" /></button>
+                  </div>
                 ))}
               </div>
             )}
@@ -301,6 +390,8 @@ function App() {
             filename={selected.file.name}
             position={selectedPosition}
             total={files.length}
+            warningReview={selected.warningReview}
+            onWarningReviewChange={updateWarningReview}
           />
         )}
 
@@ -329,17 +420,22 @@ function Results({
   filename,
   position,
   total,
+  warningReview,
+  onWarningReviewChange,
 }: {
   report: VerificationReport;
   previewUrl: string;
   filename: string;
   position: number;
   total: number;
+  warningReview: WarningVisualReview;
+  onWarningReviewChange: (key: keyof WarningVisualReview, value: boolean) => void;
 }) {
   const counts = report.checks.reduce(
     (total, check) => ({ ...total, [check.status]: total[check.status] + 1 }),
     { pass: 0, fail: 0, review: 0 },
   );
+  const confirmedReviewItems = countConfirmedReviewItems(warningReview);
 
   return (
     <section className="results" aria-labelledby="results-heading">
@@ -356,6 +452,29 @@ function Results({
             <small>Label {position} of {total} · {filename}</small>
           </div>
           <img src={previewUrl} alt={`Selected alcohol label: ${filename}`} />
+          <fieldset className="visual-review">
+            <legend>Government warning visual review</legend>
+            <p>
+              Confirm the requirements that cannot be established reliably from OCR alone.
+              Selections stay in this browser session.
+            </p>
+            <div className="review-progress" aria-live="polite">
+              <strong>{confirmedReviewItems} of {WARNING_REVIEW_ITEMS.length} confirmed</strong>
+              <span>{confirmedReviewItems === WARNING_REVIEW_ITEMS.length ? "Manual review complete" : "Reviewer confirmation required"}</span>
+            </div>
+            <div className="visual-review-list">
+              {WARNING_REVIEW_ITEMS.map((item) => (
+                <label key={item.key}>
+                  <input
+                    type="checkbox"
+                    checked={warningReview[item.key]}
+                    onChange={(event) => onWarningReviewChange(item.key, event.target.checked)}
+                  />
+                  <span><strong>{item.label}</strong><small>{item.help}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
         <div className="checks-panel">
           <div className="panel-title"><span>Field checks</span><small>{report.checks.length} requirements reviewed</small></div>

@@ -12,6 +12,8 @@ A privacy-first prototype that compares distilled-spirits label artwork with app
 - Normalizes harmless brand differences such as capitalization, punctuation, and spacing.
 - Shows the expected and detected value plus a plain-language explanation for every finding.
 - Routes uncertain OCR and visual requirements to **Needs review** instead of presenting a false conclusion.
+- Keeps independent application values and review notes for every image in a batch.
+- Provides a per-label visual checklist for warning typography, legibility, contrast, and placement.
 - Records OCR confidence and total processing time.
 
 ## Why this approach
@@ -73,7 +75,7 @@ The bundled OCR runtime and English language model make the deployed application
 - OCR quality depends on resolution, focus, glare, perspective, and typography.
 - A photograph does not provide a reliable physical scale. The app cannot conclusively measure millimeter type size without calibrated capture data.
 - OCR alone cannot reliably prove bold font weight, background contrast, field-of-vision placement, or continuous-paragraph layout. These receive a manual-review result.
-- Batch files currently share one set of expected application values. A production batch flow should ingest structured application data and pair each application with its artwork.
+- Every batch file has its own editable application record. A production batch flow should additionally ingest structured application data rather than requiring manual entry.
 - The first review may take longer while the browser initializes the OCR engine; subsequent images reuse the worker.
 
 ## Regulatory references
@@ -108,7 +110,7 @@ docs/
 
 ## Testing
 
-Unit tests cover tolerant brand matching, ABV mismatch, proof consistency, equivalent metric volumes, missing warning text, and import-country checks. Manual browser verification covers local OCR, intentional mismatches, and a two-file batch selected through the real file picker. The GitHub Actions workflow runs tests, linting, and a production build for every push and pull request.
+Unit tests cover tolerant brand matching, ABV mismatch, proof consistency, equivalent metric volumes, missing warning text, import-country checks, independent application records, conditional origin requirements, and isolated visual-review state. Manual browser verification covers local OCR, intentional mismatches, and a two-file batch selected through the real file picker. The GitHub Actions workflow runs tests, linting, and a production build for every push and pull request.
 
 See [`docs/FINAL_CHECKLIST.md`](docs/FINAL_CHECKLIST.md) for the verified scenarios and remaining release steps.
 

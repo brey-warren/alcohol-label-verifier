@@ -22,9 +22,13 @@ Brand names use normalized comparison because case and punctuation differences c
 
 Bold weight, physical type size, contrast, separation from other content, and field-of-vision rules cannot be safely inferred from arbitrary pixels alone. The prototype surfaces these boundaries explicitly. A production system could combine calibrated capture, layout models, and human confirmation.
 
-## 6. Batch support is deliberately bounded
+## 6. Batch records are independent
 
-The UI accepts a small group of images and reuses one application record. This demonstrates sequential batch handling without inventing an unspecified COLA export format. Production work should begin with a real application-data contract, then add per-row pairing, resumability, and exportable results.
+The UI accepts a small group of images and gives every image an independent copy of the application data and manual-review checklist. Selecting a queued label switches both its expected values and its results, preventing cross-label comparisons. The prototype keeps manual data entry because the brief does not provide a COLA export contract. Production work should begin with that contract, then add CSV/JSON ingestion, resumability, and exportable results.
+
+## 7. Visual-format decisions stay explicit
+
+OCR can confirm warning wording and an uppercase heading, but it cannot reliably prove font weight, physical type size, contrast, or placement from arbitrary photographs. Each label therefore has a visible reviewer checklist for those requirements. Checklist state is kept separate from deterministic results so manual confirmation never masquerades as an automated finding.
 
 ## Future work
 
@@ -36,4 +40,3 @@ The UI accepts a small group of images and reuses one application record. This d
 - Web Worker pool and device-aware batch concurrency
 - Exportable audit record with rule-set versioning
 - Evaluation dataset with field-level precision/recall and latency percentiles
-

@@ -10,6 +10,14 @@ export interface ApplicationData {
   countryOfOrigin: string;
 }
 
+export interface WarningVisualReview {
+  uppercaseHeading: boolean;
+  boldHeading: boolean;
+  legibleText: boolean;
+  sufficientContrast: boolean;
+  groupedAndUnobscured: boolean;
+}
+
 export interface ExtractedFields {
   brandName?: string;
   classType?: string;
