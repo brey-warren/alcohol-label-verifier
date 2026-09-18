@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1500" viewBox="0 0 1100 1500">
+  <rect width="1100" height="1500" fill="#f2ead7"/>
+  <rect x="42" y="42" width="1016" height="1416" rx="24" fill="none" stroke="#172c2c" stroke-width="8"/>
+  <rect x="70" y="70" width="960" height="1360" rx="16" fill="none" stroke="#c88632" stroke-width="3"/>
+  <text x="550" y="175" fill="#9a5f20" font-family="Georgia, serif" font-size="32" text-anchor="middle" letter-spacing="9">EST. 1897</text>
+  <text x="550" y="320" fill="#172c2c" font-family="Georgia, serif" font-weight="700" font-size="92" text-anchor="middle">OLD TOM</text>
+  <text x="550" y="405" fill="#172c2c" font-family="Georgia, serif" font-weight="700" font-size="65" text-anchor="middle" letter-spacing="7">DISTILLERY</text>
+  <path d="M260 465 H840" stroke="#c88632" stroke-width="5"/>
+  <text x="550" y="510" fill="#172c2c" font-family="Arial, sans-serif" font-size="27" text-anchor="middle" letter-spacing="3">OLD TOM DISTILLERY</text>
+  <text x="550" y="565" fill="#172c2c" font-family="Arial, sans-serif" font-size="42" text-anchor="middle">Kentucky Straight</text>
+  <text x="550" y="625" fill="#172c2c" font-family="Arial, sans-serif" font-size="42" text-anchor="middle">Bourbon Whiskey</text>
+  <text x="550" y="735" fill="#172c2c" font-family="Arial, sans-serif" font-size="34" text-anchor="middle">45% Alc. by Vol. (90 Proof)</text>
+  <text x="550" y="795" fill="#172c2c" font-family="Arial, sans-serif" font-size="34" text-anchor="middle">750 mL</text>
+  <text x="550" y="890" fill="#172c2c" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">Old Tom Distillery, Louisville, Kentucky</text>
+  <rect x="105" y="970" width="890" height="345" rx="8" fill="#fbf8ef" stroke="#172c2c" stroke-width="2"/>
+  <text x="140" y="1035" fill="#111" font-family="Arial, sans-serif" font-size="26" font-weight="700">GOVERNMENT WARNING:</text>
+  <text x="140" y="1080" fill="#111" font-family="Arial, sans-serif" font-size="25">
+    <tspan x="140" dy="0">(1) According to the Surgeon General, women should not</tspan>
+    <tspan x="140" dy="39">drink alcoholic beverages during pregnancy because of the</tspan>
+    <tspan x="140" dy="39">risk of birth defects. (2) Consumption of alcoholic beverages</tspan>
+    <tspan x="140" dy="39">impairs your ability to drive a car or operate machinery, and</tspan>
+    <tspan x="140" dy="39">may cause health problems.</tspan>
+  </text>
+  <text x="550" y="1380" fill="#9a5f20" font-family="Georgia, serif" font-size="25" text-anchor="middle" letter-spacing="4">BOTTLED WITH CARE</text>
+</svg>
