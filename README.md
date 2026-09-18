@@ -4,6 +4,10 @@ A privacy-first prototype that compares distilled-spirits label artwork with app
 
 > **Prototype notice:** LabelCheck AI supports—not replaces—human compliance review. Its results are not an official TTB determination.
 
+## Live demo
+
+[Open the deployed LabelCheck AI application](https://alcohol-label-verifier-liard.vercel.app/)
+
 ## What it does
 
 - Accepts expected application values and one or more label images.
